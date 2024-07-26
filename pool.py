@@ -15,8 +15,9 @@ pygame.display.set_caption('Pool')
 
 # Define colors
 GREEN = (0, 128, 0)
-WHITE = (255, 255, 255)
 BROWN = (110, 40, 20)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 TEXT_COLOR = (255, 255, 0)  # Yellow for speed text
 
 # Define ball properties
@@ -24,8 +25,12 @@ BALL_SIZE = 10
 BALL_MASS = 1
 FRICTION = 0.02
 EDGE_FRICTION = 1
-MAX_SPEED = 20  # Maximum speed for the white ball
-STANDARD_SPEED = 10  # Standard speed for the white ball when it stops
+MAX_SPEED = 20
+STANDARD_SPEED = 10
+
+# Define hole properties
+HOLE_SIZE = 2 * BALL_SIZE
+HOLE_COLOR = BLACK
 
 # Define number of balls and colors
 NUM_BALLS = 15
@@ -47,10 +52,13 @@ POOL_BALL_COLORS = [
     (255, 0, 0)  # Red
 ]
 
+# Initialize font
+font = pygame.font.SysFont(None, 36)
+
 # Function to calculate positions of balls in a triangular formation
 def calculate_positions():
     positions = []
-    rows = 5  # Number of rows in the formation
+    rows = 5
     for row in range(rows):
         y = BORDER_WIDTH + 100 + (rows - row - 1) * BALL_SIZE * 2.5
         for col in range(row + 1):
@@ -80,26 +88,20 @@ objects[NUM_BALLS] = {
     'size': BALL_SIZE,
     'speed': 0,
     'position': white_ball_pos,
-    'direction': Vector2(0, -1.1),  # Set the initial direction of White ball
+    'direction': Vector2(0, -1.1),
     'color': WHITE
 }
 NUM_BALLS += 1  # Include the white ball in the count
 
-# Initialize the cue angle and speed
-cue_angle = 90  # Initial angle in degrees
-cue_length = 150  # Length of the cue
-current_speed = STANDARD_SPEED  # Set standard speed of the white ball
-
-# Initialize font
-font = pygame.font.SysFont(None, 36)  # None for default font, 36 is font size
+# Initialize cue settings
+cue_angle = 90
+cue_length = 150
+current_speed = STANDARD_SPEED
 
 # Update ball positions and handle wall collisions
 def update_positions():
     for obj in objects.values():
-        # Update position based on direction and speed
         obj['position'] += obj['direction'] * obj['speed']
-
-        # Apply friction to decrease speed over time
         obj['speed'] = max(0, obj['speed'] - FRICTION)
 
         # Handle wall collisions and apply edge friction
@@ -131,35 +133,35 @@ def handle_collisions():
                 pos_diff = obj1['position'] - obj2['position']
                 distance = pos_diff.length()
                 if distance < obj1['size'] + obj2['size']:  # Collision detected
-                    # Calculate normal vector
                     normal = pos_diff.normalize()
-
-                    # Relative velocity
                     v_rel = obj1['direction'] * obj1['speed'] - obj2['direction'] * obj2['speed']
                     v_rel_normal = v_rel.dot(normal)
 
                     if v_rel_normal <= 0:
-                        # Calculate impulse and update velocities
                         impulse = (2 * v_rel_normal) / (obj1['mass'] + obj2['mass'])
                         obj1['direction'] -= impulse * obj2['mass'] * normal
                         obj2['direction'] += impulse * obj1['mass'] * normal
 
-                        # Update speeds and normalize directions
-                        obj1['speed'] = obj1['direction'].length()
-                        obj2['speed'] = obj2['direction'].length()
+                        obj1['speed'] = max(0, obj1['direction'].length() - 2 * FRICTION)
+                        obj2['speed'] = max(0, obj2['direction'].length() - 2 * FRICTION)
                         obj1['direction'].normalize_ip()
                         obj2['direction'].normalize_ip()
 
-                        # Apply collision friction
-                        obj1['speed'] = max(0, obj1['speed'] - 2 * FRICTION)
-                        obj2['speed'] = max(0, obj2['speed'] - 2 * FRICTION)
+# Draw holes on the table
+def draw_holes():
+    hole_positions = [
+        (BORDER_WIDTH, BORDER_WIDTH), (BORDER_WIDTH + TABLE_WIDTH, BORDER_WIDTH),
+        (BORDER_WIDTH, BORDER_WIDTH + TABLE_HEIGHT), (BORDER_WIDTH + TABLE_WIDTH, BORDER_WIDTH + TABLE_HEIGHT),
+        (BORDER_WIDTH, TABLE_HEIGHT // 2), (BORDER_WIDTH + TABLE_WIDTH, TABLE_HEIGHT // 2)
+    ]
+    for pos in hole_positions:
+        pygame.draw.circle(screen, HOLE_COLOR, pos, 1.5 * BALL_SIZE)
 
-# Draw all balls
+# Draw all balls and speed text
 def draw_balls():
-    screen.fill(BROWN)  # Clear the screen with background color
-
-    # Draw the green table surface
+    screen.fill(BROWN)
     pygame.draw.rect(screen, GREEN, (BORDER_WIDTH, BORDER_WIDTH, TABLE_WIDTH, TABLE_HEIGHT))
+    draw_holes()
 
     for obj in objects.values():
         pygame.draw.circle(screen, obj['color'], (int(obj['position'].x), int(obj['position'].y)), obj['size'])
@@ -184,7 +186,6 @@ def main():
     global cue_angle, current_speed
     running = True
     clock = pygame.time.Clock()
-
     ball_moving = False
 
     while running:
@@ -194,28 +195,27 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
-                elif event.key == pygame.K_RETURN:
-                    if objects[NUM_BALLS - 1]['speed'] == 0:  # Check if the white ball is not moving
-                        objects[NUM_BALLS - 1]['speed'] = current_speed  # Set speed of the white ball
+                elif event.key == pygame.K_SPACE:
+                    if objects[NUM_BALLS - 1]['speed'] == 0:
+                        objects[NUM_BALLS - 1]['speed'] = current_speed
                         objects[NUM_BALLS - 1]['direction'] = -Vector2(math.cos(math.radians(cue_angle)),
                                                                        math.sin(math.radians(cue_angle)))
                         ball_moving = True
                 elif event.key == pygame.K_LEFT:
-                    cue_angle = (cue_angle - 5) % 360  # Rotate the cue to the left
+                    cue_angle = (cue_angle - 5) % 360
                 elif event.key == pygame.K_RIGHT:
-                    cue_angle = (cue_angle + 5) % 360  # Rotate the cue to the right
+                    cue_angle = (cue_angle + 5) % 360
                 elif event.key == pygame.K_UP:
-                    current_speed = min(MAX_SPEED, current_speed + 1)  # Increase the initial speed but cap at MAX_SPEED
+                    current_speed = min(MAX_SPEED, current_speed + 1)
                 elif event.key == pygame.K_DOWN:
-                    current_speed = max(1, current_speed - 1)  # Decrease the initial speed but keep it positive
+                    current_speed = max(1, current_speed - 1)
 
         if ball_moving:
             update_positions()
             handle_collisions()
-            ball_moving = any(obj['speed'] > 0 for obj in objects.values())  # Check if any ball is still moving
+            ball_moving = any(obj['speed'] > 0 for obj in objects.values())
 
         draw_balls()
-
         if objects[NUM_BALLS - 1]['speed'] == 0:
             draw_cue()
 
