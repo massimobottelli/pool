@@ -23,3 +23,5 @@ A simple pool game implemented in Python using the Pygame library. The game simu
    - The white ball will move in the direction of the cue stick with the set speed.
    - Balls will bounce off the walls and each other.
    - The game simulates friction and ball collisions.
+
+![Pool](image.gif)
