@@ -1,39 +1,25 @@
 # Pool Game
 
-A simple pool game implemented in Python using Pygame. The game features a set of colored pool balls and a white cue ball, with basic physics for ball movement and collision handling.
+A simple pool game implemented in Python using the Pygame library. The game simulates a basic version of pool with collision detection, ball movement, and a cue stick for aiming and striking the cue ball.
 
 ## Features
 
-- **Basic Pool Physics**: Balls move and collide with each other and the walls of the screen.
-- **Ball Colors**: A variety of colors for different balls.
-- **Friction**: Friction is applied to simulate ball slowing over time.
-- **Collisions**: Basic collision detection and response between balls.
+- **Basic Pool Mechanics**: Includes a table, balls, and holes.
+- **Cue Stick**: Allows aiming and setting the speed of the cue ball.
+- **Collision Detection**: Handles ball collisions and wall bounces.
+- **Speed Control**: Adjust the speed of the cue ball.
 
 
-## Code Overview
+2. **Controls**
 
-- **Imports**: The script uses `pygame` for game rendering and input handling, `Vector2` from `pygame.math` for vector operations, and `random` and `math` for game physics and ball movement.
+   - **Arrow Keys**: Adjust the angle of the cue stick.
+   - **Up/Down Keys**: Increase or decrease the speed of the cue ball.
+   - **Spacebar**: Strike the cue ball with the current speed and angle.
+   - **Escape Key**: Exit the game.
 
-- **Initialization**:
-    - The game window is set up with dimensions 400x800 pixels.
-    - Colors and ball properties are defined.
+3. **Gameplay**
 
-- **Ball Setup**:
-    - Balls are arranged in a triangular formation.
-    - Each ball has properties such as mass, size, speed, and direction.
-    - The white cue ball is initialized separately.
-
-- **Physics**:
-    - Ball positions are updated based on their speed and direction.
-    - Ball collisions with walls and each other are handled with basic physics principles.
-
-- **Rendering**:
-    - Balls are drawn on the screen with their respective colors.
-
-- **Main Game Loop**:
-    - Handles user input, updates ball positions, processes collisions, and draws the game state on the screen.
-
-## Controls
-
-- **Quit Game**: Press `Q` to quit the game.
-
+   - Use the cue stick to aim and hit the white cue ball.
+   - The white ball will move in the direction of the cue stick with the set speed.
+   - Balls will bounce off the walls and each other.
+   - The game simulates friction and ball collisions.
