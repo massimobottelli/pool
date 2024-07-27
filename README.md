@@ -10,13 +10,6 @@ A simple pool game implemented in Python using the Pygame library. The game simu
 - **Speed Control**: Adjust the speed of the cue ball.
 
 
-2. **Controls**
-
-   - **Arrow Keys**: Adjust the angle of the cue stick.
-   - **Up/Down Keys**: Increase or decrease the speed of the cue ball.
-   - **Spacebar**: Strike the cue ball with the current speed and angle.
-   - **Escape Key**: Exit the game.
-
 3. **Gameplay**
 
    - Use the cue stick to aim and hit the white cue ball.
