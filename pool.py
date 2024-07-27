@@ -58,6 +58,7 @@ POOL_BALL_COLORS = [
 # Initialize font
 font = pygame.font.SysFont(None, 36)
 
+
 # Function to calculate positions of balls in a triangular formation
 def calculate_positions():
     positions = []
@@ -68,6 +69,7 @@ def calculate_positions():
             x = (2 * BORDER_WIDTH + TABLE_WIDTH) // 2 - (row / 2 - col) * BALL_SIZE * 2.5
             positions.append((x, y))
     return positions
+
 
 # Generate initial positions for balls
 initial_positions = calculate_positions()[:NUM_BALLS]
@@ -102,6 +104,16 @@ NUM_BALLS += 1  # Include the white ball in the count
 cue_angle = 90
 cue_length = 150
 current_speed = STANDARD_SPEED
+
+
+# Function to calculate the angle of the cue based on the mouse position
+def calculate_cue_angle(mouse_pos):
+    white_ball_pos = objects[NUM_BALLS - 1]['position']
+    delta_x = mouse_pos[0] - white_ball_pos.x
+    delta_y = mouse_pos[1] - white_ball_pos.y
+    angle = math.degrees(math.atan2(delta_y, delta_x))
+    return angle
+
 
 # Update ball positions and handle wall collisions
 def update_positions():
@@ -148,6 +160,7 @@ def update_positions():
                     running = False  # Set the running flag to False to quit the game
                 break
 
+
 # Handle collisions between balls
 def handle_collisions():
     for i, obj1 in objects.items():
@@ -172,6 +185,7 @@ def handle_collisions():
                         obj1['direction'].normalize_ip()
                         obj2['direction'].normalize_ip()
 
+
 # Draw holes on the table
 hole_positions = [
     (BORDER_WIDTH, BORDER_WIDTH),
@@ -182,9 +196,11 @@ hole_positions = [
     (BORDER_WIDTH + TABLE_WIDTH, TABLE_HEIGHT // 2)
 ]
 
+
 def draw_holes():
     for pos in hole_positions:
         pygame.draw.circle(screen, HOLE_COLOR, pos, HOLE_SIZE // 2)
+
 
 # Draw all balls, score, and speed text
 def draw_balls():
@@ -207,6 +223,7 @@ def draw_balls():
         text_rect = speed_text.get_rect(center=(white_ball['position'].x + 30, white_ball['position'].y))
         screen.blit(speed_text, text_rect)
 
+
 # Draw the pool cue
 def draw_cue():
     white_ball = objects[NUM_BALLS - 1]
@@ -214,6 +231,7 @@ def draw_cue():
     cue_end = cue_start + Vector2(cue_length * math.cos(math.radians(cue_angle)),
                                   cue_length * math.sin(math.radians(cue_angle)))
     pygame.draw.line(screen, WHITE, (cue_start.x, cue_start.y), (cue_end.x, cue_end.y), 3)
+
 
 # Main game loop
 def main():
@@ -226,23 +244,27 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    running = False
-                elif event.key == pygame.K_SPACE:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Left mouse button
                     if objects[NUM_BALLS - 1]['speed'] == 0:
                         objects[NUM_BALLS - 1]['speed'] = current_speed
                         objects[NUM_BALLS - 1]['direction'] = -Vector2(math.cos(math.radians(cue_angle)),
                                                                        math.sin(math.radians(cue_angle)))
                         ball_moving = True
-                elif event.key == pygame.K_LEFT:
-                    cue_angle = (cue_angle - 5) % 360
-                elif event.key == pygame.K_RIGHT:
-                    cue_angle = (cue_angle + 5) % 360
-                elif event.key == pygame.K_UP:
-                    current_speed = min(MAX_SPEED, current_speed + 1)
-                elif event.key == pygame.K_DOWN:
-                    current_speed = max(1, current_speed - 1)
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+
+        # Update cue angle and speed based on mouse position
+        mouse_pos = pygame.mouse.get_pos()
+        white_ball_pos = objects[NUM_BALLS - 1]['position']
+        distance_to_mouse = (mouse_pos[0] - white_ball_pos.x, mouse_pos[1] - white_ball_pos.y)
+        distance = Vector2(distance_to_mouse).length()
+
+        # Adjust speed based on distance
+        current_speed = max(1, min(MAX_SPEED, (distance / 10)))
+
+        cue_angle = calculate_cue_angle(mouse_pos)
 
         if ball_moving:
             update_positions()
@@ -258,6 +280,7 @@ def main():
 
     pygame.quit()
     sys.exit()
+
 
 # Run the game
 if __name__ == "__main__":
