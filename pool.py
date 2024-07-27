@@ -13,6 +13,9 @@ TABLE_WIDTH, TABLE_HEIGHT = WINDOWS_WIDTH - 2 * BORDER_WIDTH, WINDOWS_HEIGHT - 2
 screen = pygame.display.set_mode((WINDOWS_WIDTH, WINDOWS_HEIGHT))
 pygame.display.set_caption('Pool')
 
+# Score
+score = 0
+
 # Define colors
 GREEN = (0, 128, 0)
 BROWN = (110, 40, 20)
@@ -29,7 +32,7 @@ MAX_SPEED = 20
 STANDARD_SPEED = 10
 
 # Define hole properties
-HOLE_SIZE = 2 * BALL_SIZE
+HOLE_SIZE = 4 * BALL_SIZE
 HOLE_COLOR = BLACK
 
 # Define number of balls and colors
@@ -77,7 +80,8 @@ objects = {
         'speed': 0,
         'position': Vector2(initial_positions[i]),
         'direction': Vector2(0, 0),
-        'color': POOL_BALL_COLORS[i % len(POOL_BALL_COLORS)]
+        'color': POOL_BALL_COLORS[i % len(POOL_BALL_COLORS)],
+        'potted': False  # Add a 'potted' flag
     } for i in range(NUM_BALLS)
 }
 
@@ -89,7 +93,8 @@ objects[NUM_BALLS] = {
     'speed': 0,
     'position': white_ball_pos,
     'direction': Vector2(0, -1.1),
-    'color': WHITE
+    'color': WHITE,
+    'potted': False  # Add a 'potted' flag
 }
 NUM_BALLS += 1  # Include the white ball in the count
 
@@ -100,7 +105,12 @@ current_speed = STANDARD_SPEED
 
 # Update ball positions and handle wall collisions
 def update_positions():
+    global running, score  # Add global running to quit the game
+
     for obj in objects.values():
+        if obj['potted']:
+            continue  # Skip potted balls
+
         obj['position'] += obj['direction'] * obj['speed']
         obj['speed'] = max(0, obj['speed'] - FRICTION)
 
@@ -125,11 +135,26 @@ def update_positions():
             obj['position'].y = BORDER_WIDTH + TABLE_HEIGHT - obj['size']
             obj['speed'] = max(0, obj['speed'] - EDGE_FRICTION)
 
+        # Check for collision with holes
+        for hole_pos in hole_positions:
+            if (obj['position'] - Vector2(hole_pos)).length() <= HOLE_SIZE / 2:
+                obj['potted'] = True
+                obj['speed'] = 0
+                score += 1
+
+                # If the white ball is potted, quit the game
+                if obj['color'] == WHITE:
+                    global running  # Declare running as global to modify its value
+                    running = False  # Set the running flag to False to quit the game
+                break
+
 # Handle collisions between balls
 def handle_collisions():
     for i, obj1 in objects.items():
+        if obj1['potted']:
+            continue  # Skip potted balls
         for j, obj2 in objects.items():
-            if i < j:
+            if i < j and not obj2['potted']:
                 pos_diff = obj1['position'] - obj2['position']
                 distance = pos_diff.length()
                 if distance < obj1['size'] + obj2['size']:  # Collision detected
@@ -148,23 +173,32 @@ def handle_collisions():
                         obj2['direction'].normalize_ip()
 
 # Draw holes on the table
-def draw_holes():
-    hole_positions = [
-        (BORDER_WIDTH, BORDER_WIDTH), (BORDER_WIDTH + TABLE_WIDTH, BORDER_WIDTH),
-        (BORDER_WIDTH, BORDER_WIDTH + TABLE_HEIGHT), (BORDER_WIDTH + TABLE_WIDTH, BORDER_WIDTH + TABLE_HEIGHT),
-        (BORDER_WIDTH, TABLE_HEIGHT // 2), (BORDER_WIDTH + TABLE_WIDTH, TABLE_HEIGHT // 2)
-    ]
-    for pos in hole_positions:
-        pygame.draw.circle(screen, HOLE_COLOR, pos, 1.5 * BALL_SIZE)
+hole_positions = [
+    (BORDER_WIDTH, BORDER_WIDTH),
+    (BORDER_WIDTH + TABLE_WIDTH, BORDER_WIDTH),
+    (BORDER_WIDTH, BORDER_WIDTH + TABLE_HEIGHT),
+    (BORDER_WIDTH + TABLE_WIDTH, BORDER_WIDTH + TABLE_HEIGHT),
+    (BORDER_WIDTH, TABLE_HEIGHT // 2),
+    (BORDER_WIDTH + TABLE_WIDTH, TABLE_HEIGHT // 2)
+]
 
-# Draw all balls and speed text
+def draw_holes():
+    for pos in hole_positions:
+        pygame.draw.circle(screen, HOLE_COLOR, pos, HOLE_SIZE // 2)
+
+# Draw all balls, score, and speed text
 def draw_balls():
     screen.fill(BROWN)
     pygame.draw.rect(screen, GREEN, (BORDER_WIDTH, BORDER_WIDTH, TABLE_WIDTH, TABLE_HEIGHT))
     draw_holes()
 
+    # Draw the score
+    score_text = font.render(f"{score}", True, TEXT_COLOR)
+    screen.blit(score_text, (10, 10))  # Draw score in the top left corner
+
     for obj in objects.values():
-        pygame.draw.circle(screen, obj['color'], (int(obj['position'].x), int(obj['position'].y)), obj['size'])
+        if not obj['potted']:
+            pygame.draw.circle(screen, obj['color'], (int(obj['position'].x), int(obj['position'].y)), obj['size'])
 
     # Draw the initial speed of the white ball if it's not moving
     white_ball = objects[NUM_BALLS - 1]
@@ -183,7 +217,7 @@ def draw_cue():
 
 # Main game loop
 def main():
-    global cue_angle, current_speed
+    global cue_angle, current_speed, running
     running = True
     clock = pygame.time.Clock()
     ball_moving = False
@@ -213,7 +247,7 @@ def main():
         if ball_moving:
             update_positions()
             handle_collisions()
-            ball_moving = any(obj['speed'] > 0 for obj in objects.values())
+            ball_moving = any(obj['speed'] > 0 for obj in objects.values() if not obj['potted'])
 
         draw_balls()
         if objects[NUM_BALLS - 1]['speed'] == 0:
